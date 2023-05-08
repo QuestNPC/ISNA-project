@@ -10,6 +10,7 @@ import multiprocessing as mp
 
 wd = os.getcwd()
 
+'''old implementation'''
 def process_file(filename, id_dict):
     data = pd.read_csv(filename)
     hastag_dataframes = {}

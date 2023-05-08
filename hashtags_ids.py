@@ -15,8 +15,6 @@ Dictionaries are saved in .json files.
 '''
 wd = os.getcwd()
 
-
-@jit(target_backend='cuda')
 def process_files(files, output_dir):
     hashtag_counts = pd.DataFrame()
     hashtag_ids = pd.DataFrame()
@@ -24,11 +22,8 @@ def process_files(files, output_dir):
     for file in files:
         if file.endswith(".fea"):
             data = pd.read_feather(file, encoding='latin-1')
-            print('Processing:', file)            
-            try:
-                data['Hastag'] = data['Hastag'].apply(lambda x: x.lower())
-            except KeyError:
-                data['Hashtag'] = data['Hashtag'].apply(lambda x: x.lower())
+            data['Hashtag'] = data['Hashtag'].apply(lambda x: x.lower())
+
             df = data.groupby(["Hashtag"])
 
             sum_df = df.count()
@@ -56,7 +51,7 @@ def hashtag_count(output_dir):
     all_files = []
     for root,dirs,files in os.walk(path):
         for file in files:
-            if file.endswith(".csv"):
+            if file.endswith(".fea"):
                 relative_path = os.path.relpath(os.path.join(file, root))
                 relative_path = os.path.join(relative_path, file)
                 all_files.append(relative_path)
@@ -101,25 +96,15 @@ def hashtag_count(output_dir):
 
 
 def process_ner(files, output_dir):
-    ner_counts = {}
-
+    ner_counts = pd.DataFrame()
     for file in files:
-        if file.endswith(".csv"):
-            data = pd.read_csv(file, encoding='latin-1')
-            print("Processing: ", file)
-            for index, row in data.iterrows():
-            
-                tag = row['NER_Text']
-
-                try:
-                    ner_counts[tag.lower()] = ner_counts[tag.lower()] + 1 #hashtags are not case sensitive
-                except KeyError:
-                    ner_counts[tag.lower()] = 1
-                except AttributeError:
-                    pass #not interested in Nan
-    filename = os.path.join(output_dir, os.path.basename(file).replace(".csv", ".pkl"))
-    with open(filename, "wb") as f:
-        pickle.dump(ner_counts, f)
+        if file.endswith(".fea"):
+            df = pd.read_feather(file)
+            grouped = df.groupby("NER_Text", as_index=False).count()
+            df1 = pd.concat([ner_counts, grouped], ignore_index=True)
+            ner_counts = df1.groupby("NER_Text", as_index=False).sum()  
+    filename = os.path.join(output_dir, os.path.basename(file))
+    ner_counts.to_feather(filename)
 
 def ner_count(output_dir):
     '''
@@ -132,58 +117,43 @@ def ner_count(output_dir):
     all_files = []
     for root,dirs,files in os.walk(path):
         for file in files:
-            if file.endswith(".csv"):
+            if file.endswith(".fea"):
                 relative_path = os.path.relpath(os.path.join(file, root))
                 relative_path = os.path.join(relative_path, file)
                 all_files.append(relative_path)
 
-    num_processes = mp.cpu_count()
-    chunk_size = int(len(all_files) / num_processes)
+    num_processes = 6
+    chunk_size = 168 #hours in a week
 
     pool = mp.Pool(processes=num_processes)
     
-    for i in range(num_processes):
-        start = i * chunk_size
-        end = start + chunk_size
-        if i == num_processes - 1:
-            end = len(all_files)
-        pool.apply_async(process_ner, args=(all_files[start:end], output_dir))
+    for i in range(0, len(all_files), chunk_size):
+        chunk = all_files[i:i+chunk_size]
+        pool.apply_async(process_ner, args=(chunk, output_dir))
     
     pool.close()
     pool.join()
 
-    ner_counts = {}
+    ner_counts = pd.DataFrame()
     for file in os.listdir(output_dir):
-        if file.endswith(".pkl"):
+        if file.endswith(".fea"):
             filename = os.path.join(output_dir, file)
-            with open(filename, "rb") as f:
-                counts = pickle.load(f)
-            for tag, count in counts.items():
-                try:
-                    ner_counts[tag] += count
-                except KeyError:
-                    ner_counts[tag] = count
+            df = pd.read_feather(filename)
+            df = df.drop(columns=["Start_Pos", "End_Pos"])
+            ner_counts = pd.concat([ner_counts, df], ignore_index=True)
+            ner_counts = ner_counts.groupby(["NER_Text"],as_index=False).sum()
 
     for file in os.listdir(output_dir):
         filename = os.path.join(output_dir, file)
         os.remove(filename)                 #clear the trash
-    sorted_ner_counts = sorted(ner_counts.items(), key=lambda x:x[1], reverse=True)
-    return sorted_ner_counts
+    sorted_ner= ner_counts.sort_values(by=["Tweet_ID"], ascending=False).reset_index()
+    return sorted_ner
 
 
 
 
 
 if  __name__ == '__main__':
-    
-    sorted_tags, ids = hashtag_count("temp")
-    with open('tag_counts.json', 'w') as fout:
-        json.dump(sorted_tags , fout)
-    with open('id_dict.json', 'w') as fout:
-        json.dump([ids] , fout)
-
-    #sorted_ner = ner_count("temp")
-    #print(sorted_ner[0:5])
-    #with open('ner_counts.json', 'w') as fout:
-    #    json.dump(sorted_ner , fout)
-    #print(sorted_tags[0:5])
+    path = "NER.fea"
+    sorted_ner = ner_count("temp")
+    sorted_ner.to_feather(path)

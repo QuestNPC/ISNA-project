@@ -1,28 +1,32 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import json
+import os
+import pandas as pd
+import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
 from scipy.stats import t
+import statsmodels.api as sm
+
+wd = os.getcwd()
 
 def linear(x, a, b):
     return a * x + b
 
 
-def checkfit(data_dict):
-
-    ydata = [item[1] for item in data_dict]
+def checkfit(ydata):
+    
+    ydata = [y for y in ydata if y > 0]
     x = len(ydata)+1
     xdata = list(range(1,x))
 
-    xdata = np.log10(xdata)
-    ydata = np.log10(ydata)
+    xdata = np.log(xdata)
+    ydata = np.log(ydata)
 
     # Fit the data using linear regression
     model = LinearRegression()
     model.fit(xdata.reshape(-1, 1), ydata)
     y_pred = model.predict(xdata.reshape(-1, 1))
-    r2 = r2_score(ydata, y_pred)
 
     # Calculate the 95% confidence intervals
     alpha = 0.05
@@ -39,11 +43,45 @@ def checkfit(data_dict):
     plt.show()
     return
 
+def test(ydata):
+    ydata = [y for y in ydata if y > 0]
+    x = len(ydata)+1
+    x = list(range(1,x))
+    x = np.log(x)
+    ydata = np.log(ydata)
+    x = sm.add_constant(x)
+
+    # fit linear regression model
+    model = sm.OLS(ydata, x)
+    results = model.fit()
+
+    # print regression results
+
+    # plot the data and regression line with confidence intervals
+    plt.scatter(x[:, 1], ydata)
+    plt.plot(x[:, 1], results.fittedvalues, label='Regression Line')
+
+    # calculate confidence interval for the regression line
+    pred = results.get_prediction(x)
+    pred_ci = pred.conf_int()
+
+    # plot the confidence intervals
+    plt.fill_between(x[:, 1], pred_ci[:, 0], pred_ci[:, 1], alpha=.25)
+
+    # set plot title and axis labels
+    plt.title('Linear Regression with Confidence Intervals')
+    plt.xlabel('X')
+    plt.ylabel('Y')
+
+    # show legend and plot
+    plt.legend()
+    plt.show()
+
 if  __name__ == '__main__':
-    with open(r"tag_counts.json", "r") as read_file:
-            data = json.load(read_file)
-    checkfit(data)
-    with open(r"ner_counts.json", "r") as read_file:
-            data2 = json.load(read_file)
-    checkfit(data2)
+    path = 'tags_count_all.fea'
+    df = pd.read_feather(path)
+    checkfit(df["Tweet_ID"].values.tolist())
+    path = 'ner_count_all.fea'
+    df = pd.read_feather(path)
+    checkfit(df["Tweet_ID"].values.tolist())
     
