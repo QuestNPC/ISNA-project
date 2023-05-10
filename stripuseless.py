@@ -8,8 +8,7 @@ wd = os.getcwd()
 Shit's done (for now)
 '''
 
-def thinner():
-    path = 'COVID19_Tweets_Dataset\Summary_Details'
+def thinner(path):
     path = os.path.join(wd, path)
     all_files = []
     for root,dirs,files in os.walk(path):
@@ -43,9 +42,11 @@ def remove_excess_df(files):
         df['Date Created'] = pd.to_datetime(df['Date Created'])
         df['Week'] = df['Date Created'].dt.isocalendar().week
         df['Year'] = df['Date Created'].dt.isocalendar().year
-        df = df[["Tweet_ID","Likes","Retweets","Week","Year"]]
-        os.remove(file)  
-        file = file.replace(".csv", ".fea")
+        df = df.drop(['Week', "Year"], axis=1).assign(Week_Year=df[['Week','Year']].astype(int).apply(tuple, axis=1))
+        df = df[["Tweet_ID","Likes","Retweets","Week_Year"]]                                                 
+        os.remove(path)
+        path = path.replace(".csv", ".fea")
+        df.to_feather(path)
         df.to_feather(file)
 
 def feartherer(path):
@@ -149,14 +150,14 @@ def fix(files):
         df = pd.read_csv(path, encoding='latin-1')
         if "Hastag" in list(df.columns.values):
             df.rename(columns = {'Hastag':'Hashtag'}, inplace = True)
+        df['Hashtag'] = df['Hashtag'].str.lower()
         os.remove(path)  
         path = path.replace(".csv", ".fea")
         df.to_feather(path)
-        df = pd.read_feather(path)
-        print(df)
 
 if __name__== '__main__':
-    thinner() #hashtagfiles
+    path = 'COVID19_Tweets_Dataset\Summary_Details'
+    thinner(path)
     path = 'COVID19_Tweets_Dataset\Summary_Hashtag'
     fixer(path)
     path = 'COVID19_Tweets_Dataset\Summary_NER'

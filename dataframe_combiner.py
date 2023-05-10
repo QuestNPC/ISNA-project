@@ -1,11 +1,5 @@
 import pandas as pd
 import os
-import matplotlib.pyplot as plt
-from scipy.optimize import curve_fit
-import numpy as np
-from scipy.stats import t
-import json
-import pickle
 import multiprocessing as mp
 
 wd = os.getcwd()
@@ -17,6 +11,7 @@ def combine_df(files):
     file2 = files[1]
     file3 = files[2]
     df_detail = pd.read_feather(file1)
+    df_detail = df_detail.drop(['Week', "Year"], axis=1).assign(Week_Year=df_detail[['Week','Year']].astype(int).apply(tuple, axis=1))
     df_to_merge = pd.read_feather(file2)
     combo = pd.merge(df_detail, df_to_merge,on="Tweet_ID", how='left')
     df_sent = pd.read_feather(file3)
@@ -51,7 +46,7 @@ def make_hastag_df(output_dir):
                 paths = [relative_path, relative_path2, relative_path3]
                 all_files.append(paths)
     
-    num_processes = 6
+    num_processes = 8
     chunk_size = 168 #hours in a week
 
     pool = mp.Pool(processes=num_processes)

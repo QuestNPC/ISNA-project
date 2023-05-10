@@ -10,7 +10,7 @@ def process_tag(files, output_dir):
         if file.endswith(".fea"):
             df = pd.read_feather(file)
             df['Hashtag'] = df['Hashtag'].str.lower()
-            grouped = df.groupby("Hashtag", as_index=False).count()
+            grouped = df.groupby("Hashtag", as_index=False).size()
             df1 = pd.concat([ner_counts, grouped], ignore_index=True)
             ner_counts = df1.groupby("Hashtag", as_index=False).sum()  
     filename = os.path.join(output_dir, os.path.basename(file))
@@ -52,7 +52,7 @@ def tag_count(output_dir):
     for file in os.listdir(output_dir):
         filename = os.path.join(output_dir, file)
         os.remove(filename)                 #clear the trash
-    sorted_ner= ner_counts.sort_values(by=["Tweet_ID"], ascending=False).reset_index(drop=True)
+    sorted_ner= ner_counts.sort_values(by=["size"], ascending=False).reset_index(drop=True)
     print(sorted_ner)
     return sorted_ner
 
@@ -68,7 +68,7 @@ def tag_combine_years():
             df2 = pd.concat([tag_counts, df], ignore_index=True)
             tag_counts = df2.groupby(["Hashtag"],as_index=False).sum()
     
-    sorted_tag= tag_counts.sort_values(by=["Tweet_ID"], ascending=False).reset_index(drop=True)
+    sorted_tag= tag_counts.sort_values(by=["size"], ascending=False).reset_index(drop=True)
     return sorted_tag
 
 
