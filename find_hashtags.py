@@ -1,21 +1,34 @@
 import pandas as pd
 import os
 import multiprocessing as mp
+import re
+import numpy as np
 
 wd = os.getcwd()
 
-
+#.feather stopped working when storing the frame, .csv is alternative
 
 def combine_df(file, df1, tag):
     df = pd.read_feather(file)
     count = 0
-    if not df.empty:
+    df_filter = df.loc[df['Hashtag'] == tag][['Logits_Neutral','Logits_Positive','Logits_Negative','Retweets',"Week","Year", "Date Created", 'Likes']]
+ 
+    if not df_filter.empty:
         count = df['Hashtag'].value_counts()[tag]
-    df['Hashtag'] = df['Hashtag'].str.lower()
-    df = df.loc[df['Hashtag'] == tag][['Logits_Neutral','Logits_Positive','Logits_Negative','Retweets','Week_Year']]
-    if not count == 0:  #avoiding issues with dataframes with no hits on hashtag
-        df['Count'] = pd.Series(count, index=df.index[[0]])
-    df = pd.concat([df, df1], ignore_index=True)
+        df_filter.loc[df_filter.index[0], 'Count'] = count
+    if df_filter.empty:
+        #no hits, return 1 row of date, week, year, tag, and 
+        df_filter = pd.DataFrame(columns=['Logits_Neutral', 'Logits_Positive', 'Logits_Negative', 'Retweets','Week', 'Year', 'Date Created', 'Likes', 'Count']) #column order is not of significance for us
+        df_filter.loc[df_filter.index[0]] = [np.nan] * 9 + [0]
+        
+        match = re.search(r'\d{4}_\d{2}_\d{2}_\d{2}', file)
+        date_str = match.group(0)
+        date = pd.to_datetime(date_str, format="%Y_%m_%d_%H")
+        
+        df_filter['Week'] = date.week
+        df_filter['Year'] = date.year
+        df_filter['Date Created'] = date 
+    df = pd.concat([df1, df_filter], ignore_index=True)
     return df
 
 def processor(files, output, tag, i):
@@ -25,8 +38,10 @@ def processor(files, output, tag, i):
     filename = tag + '_' + str(i) + '.fea'
     path = os.path.join(wd,output)
     path = os.path.join(path, filename)
-    df.to_feather(path)
-
+    try:
+        df.to_feather(path)
+    except Exception as e:
+        print(e)
 def make_likes_df(output_dir, hashtag):
     print("Step 1 for: ", hashtag)
     
@@ -61,26 +76,25 @@ def make_likes_df(output_dir, hashtag):
             relative_path = os.path.relpath(os.path.join(file, root))
             relative_path = os.path.join(relative_path, file)
             all_files.append(relative_path)
-    combiner(all_files, output_dir)
+    combiner(all_files, output_dir, hashtag)
     print('Done for: ' + hashtag)
 
-def combiner(files, output):
+def combiner(files, output, tag):
     counts = pd.DataFrame()
-    filename = ""
+    filename = output + '\\' + tag + ".fea"
     for file in files:
         df = pd.read_feather(file)
-        if not df.empty:                            #if tag hasn't been used during the peroid of the dataframe, it is empty and can be skipped
-            counts = pd.concat([counts, df], ignore_index=True)
-            filename = os.path.join(output, os.path.basename(file))
-
-    print(counts)
+        counts = pd.concat([counts, df], ignore_index=True)
+        os.remove(file) #get rid of stuff to make sure no double reading happens
+    
+    print('Why are we looping?')
     counts.to_feather(filename)
-    for file in files:
-        os.remove(file)
+    #for file in files:
+    #    os.remove(file)
 
 if  __name__ == '__main__':
     output_dir = "weekly"
     #give list of top hashtags identified
-    hashtags = ['#covid19','#coronavirus','#covid', '#corona', '#lockdown', '#bts', '#pfizer', '#vaccine']
+    hashtags = ['#coronavirus','#covid19','#covid', '#corona', '#lockdown', '#bts', '#pfizer', '#vaccine']
     for hashtag in hashtags:
         make_likes_df(output_dir, hashtag)

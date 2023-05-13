@@ -22,7 +22,7 @@ def processor(files, output):
     path = os.path.join(path, filename)
     df.to_feather(path)
 
-def make_likes_df(output_dir):
+def make_likes_df():
     print("Making dataframes")
 
     details_path = 'combo'
@@ -57,33 +57,27 @@ def make_likes_df(output_dir):
             relative_path = os.path.relpath(os.path.join(file, root))
             relative_path = os.path.join(relative_path, file)
             all_files.append(relative_path)
-    combiner(all_files, output_dir)
+   
+    df = combiner(all_files)
+    return df
 
-
-def combiner(files, output):
+def combiner(files):
     counts = pd.DataFrame()
-    filename = ""
     for file in files:
         df = pd.read_feather(file)
         df1 = pd.concat([counts, df], ignore_index=True)
         counts = df1.groupby(['Hashtag'], as_index=False)[['Likes','Retweets']].sum()
-        filename = os.path.join(output, os.path.basename(file))
 
-    counts.to_feather(filename)
     for file in files:
-        os.remove(file) 
+        os.remove(file)
+    return counts
 
 if  __name__ == '__main__':
-    output_dir = "Likes"
-    path=''
-    make_likes_df(output_dir)
-    path = os.path.join(wd, output_dir)
-    for root,dirs,files in os.walk(path):
-        for file in files:
-            path = os.path.relpath(os.path.join(file, root))
-            path = os.path.join(path, file)
-    df = pd.read_feather(path)
-    df['Hashtag'] = df['Hashtag'].str.lower()
-    df = df.groupby(['Hashtag'], as_index=False)[['Likes','Retweets']].sum()
+    output = "Counts\\retweets_likes.fea"
+    df = make_likes_df()
+    
+    df[['Likes','Retweets']] = df[['Likes','Retweets']].astype('int64')
+    df.to_feather(output)
+    
     print(df.sort_values(by=["Likes"], ascending=False))
     print(df.sort_values(by=["Retweets"], ascending=False))

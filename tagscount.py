@@ -5,16 +5,16 @@ import multiprocessing as mp
 wd = os.getcwd()
 
 def process_tag(files, output_dir):
-    ner_counts = pd.DataFrame()
+    tag_counts = pd.DataFrame()
     for file in files:
         if file.endswith(".fea"):
             df = pd.read_feather(file)
             df['Hashtag'] = df['Hashtag'].str.lower()
             grouped = df.groupby("Hashtag", as_index=False).size()
-            df1 = pd.concat([ner_counts, grouped], ignore_index=True)
-            ner_counts = df1.groupby("Hashtag", as_index=False).sum()  
+            df1 = pd.concat([tag_counts, grouped], ignore_index=True)
+            tag_counts = df1.groupby("Hashtag", as_index=False).sum()  
     filename = os.path.join(output_dir, os.path.basename(file))
-    ner_counts.to_feather(filename)
+    tag_counts.to_feather(filename)
 
 def tag_count(output_dir):
 
@@ -42,40 +42,27 @@ def tag_count(output_dir):
     pool.join()
 
     print("Combining...")
-    ner_counts = pd.DataFrame()
+    tag_counts = pd.DataFrame()
     for file in os.listdir(output_dir):
         if file.endswith(".fea"):
             filename = os.path.join(output_dir, file)
             df = pd.read_feather(filename)
-            ner_counts = pd.concat([ner_counts, df], ignore_index=True)
-            ner_counts = ner_counts.groupby(["Hashtag"],as_index=False).sum()
+            tag_counts = pd.concat([tag_counts, df], ignore_index=True)
+            tag_counts = tag_counts.groupby(["Hashtag"],as_index=False).sum()
     for file in os.listdir(output_dir):
         filename = os.path.join(output_dir, file)
         os.remove(filename)                 #clear the trash
-    sorted_ner= ner_counts.sort_values(by=["size"], ascending=False).reset_index(drop=True)
-    print(sorted_ner)
-    return sorted_ner
+    sorted_tags= tag_counts.sort_values(by=["size"], ascending=False).reset_index(drop=True)
+    print(sorted_tags)
+    return sorted_tags
 
 
-def tag_combine_years():
 
-
-    tag_counts = pd.DataFrame()
-    for file in os.listdir('TAG'):
-        if file.endswith(".fea"):
-            filename = os.path.join('TAG', file)
-            df = pd.read_feather(filename)
-            df2 = pd.concat([tag_counts, df], ignore_index=True)
-            tag_counts = df2.groupby(["Hashtag"],as_index=False).sum()
-    
-    sorted_tag= tag_counts.sort_values(by=["size"], ascending=False).reset_index(drop=True)
-    return sorted_tag
 
 
 if  __name__ == '__main__':
     
-    path = "tags_count_all.fea"
+    path = "Counts\\tags_count_all.fea"
     sorted_tag = tag_count("temp")
-    #sorted_tag = tag_combine_years()
     print(sorted_tag[0:5])
     sorted_tag.to_feather(path)

@@ -8,10 +8,6 @@ from scipy.stats import t
 
 wd = os.getcwd()
 
-def linear(x, a, b):
-    return a * x + b
-
-
 def checkfit(ydata):
     
     n = len(ydata)+1
@@ -43,10 +39,10 @@ def checkfit(ydata):
     return
 
 if  __name__ == '__main__':
-    path = 'tags_count_all.fea'
+    path = 'Counts\\tags_count_all.fea'
     df = pd.read_feather(path)
     checkfit(df["size"].values.tolist())
-    path = 'ner_count_all.fea'
+    path = 'Counts\\ner_count_all.fea'
     df = pd.read_feather(path)
     checkfit(df["size"].values.tolist())
     

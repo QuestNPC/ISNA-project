@@ -1,7 +1,6 @@
 import pandas as pd
 import os
 import multiprocessing as mp
-from math import fsum
 
 wd = os.getcwd()
 
@@ -13,7 +12,7 @@ def process_ner(files, output_dir):
     for file in files:
         if file.endswith(".fea"):
             df = pd.read_feather(file)
-            df["NER_Text"] = df["NER_Text"].str.lower()
+            df = df[['Tweet_ID','NER_Text']]
             grouped = df.groupby("NER_Text", as_index=False).size()
             df1 = pd.concat([ner_counts, grouped], ignore_index=True)
             ner_counts = df1.groupby("NER_Text", as_index=False).sum()
@@ -46,8 +45,9 @@ def ner_count(output_dir):
     pool.join()
 
     
-    hashtag_path = 'temp'
-    path = os.path.join(wd, hashtag_path)
+    print('Step 2...')
+
+    path = os.path.join(wd, output_dir)
     all_files = []
     for root,dirs,files in os.walk(path):
         for file in files:
@@ -63,14 +63,13 @@ def ner_count(output_dir):
     print('Step 2 ....')
     for i in range(0, len(all_files), chunk_size):
         chunk = all_files[i:i+chunk_size]
-        pool.apply_async(combiner, args=(chunk, 'temp2'))
+        pool.apply_async(combiner, args=(chunk, 'temp'))
     
     pool.close()
     pool.join()
     
 
-    hashtag_path = 'temp2'
-    path = os.path.join(wd, hashtag_path)
+    path = os.path.join(wd, output_dir)
     all_files = []
     for root,dirs,files in os.walk(path):
         for file in files:
@@ -79,11 +78,10 @@ def ner_count(output_dir):
                 relative_path = os.path.join(relative_path, file)
                 all_files.append(relative_path)
     print('Step 3 ....')
-    combiner(all_files, "combo_result")
+    combiner(all_files, "temp")
 
     ner_counts = pd.DataFrame()
-    hashtag_path = 'combo_result'
-    path = os.path.join(wd, hashtag_path)
+    path = os.path.join(wd, output_dir)
     for root,dirs,files in os.walk(path):
         for file in files:
             relative_path = os.path.relpath(os.path.join(file, root))
@@ -101,14 +99,14 @@ def combiner(files, output):
         df1 = pd.concat([ner_counts, df], ignore_index=True)
         ner_counts = df1.groupby("NER_Text",as_index=False).sum()   
         filename = os.path.join(output, os.path.basename(file))
+        os.remove(file)
 
     ner_counts.to_feather(filename)
-    for file in files:
-        os.remove(file)                 #clear the trash
+    return ner_counts
     
 if  __name__ == '__main__':
 
     path = "ner_count_all.fea"
     sorted_ner = ner_count("temp")
-    print(sorted_ner)
-    sorted_ner.to_feather(path)
+    sorted_ner.to_feather('Counts\\'+ path )
+    print(sorted_ner[0:5])
