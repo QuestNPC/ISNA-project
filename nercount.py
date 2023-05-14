@@ -60,7 +60,7 @@ def ner_count(output_dir):
     chunk_size = int(len(all_files)/8) #hours in a week
 
     pool = mp.Pool(processes=num_processes)
-    print('Step 2 ....')
+    
     for i in range(0, len(all_files), chunk_size):
         chunk = all_files[i:i+chunk_size]
         pool.apply_async(combiner, args=(chunk, 'temp'))

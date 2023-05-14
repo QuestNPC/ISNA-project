@@ -6,7 +6,7 @@ import pandas as pd
 
 wd = os.getcwd()
 
-def stuff(tag, weeks, path, df_re):
+def calc_week_sent_stats(tag, weeks, path, df_re):
     path = os.path.join(wd, path)
     file = tag + '.fea'
     path = path + '\\'+ file
@@ -75,6 +75,6 @@ if  __name__ == '__main__':
     sentiments['datetime'] = pd.to_datetime(sentiments['Year'].astype(str) + sentiments['Week'].astype(str) + '1', format='%Y%W%w')
 
     for hashtag in hashtags:
-        sentiments = stuff(hashtag, weeks, 'weekly', sentiments)
+        sentiments = calc_week_sent_stats(hashtag, weeks, 'weekly', sentiments)
     
     sentiments.to_excel('Calculations\\sentiments.xlsx')

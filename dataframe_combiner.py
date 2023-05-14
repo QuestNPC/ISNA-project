@@ -60,7 +60,7 @@ def processor(files, output):
             if not os.path.exists(path):
                 print(path)
 
-def make_hastag_df(output_dir):
+def make_combined_df(output_dir):
     print("Making dataframes")
 
     details_path = 'COVID19_Tweets_Dataset\Summary_Hashtag'
@@ -96,4 +96,4 @@ def make_hastag_df(output_dir):
 
 if  __name__ == '__main__':
     output_dir = "combo"
-    make_hastag_df(output_dir)
+    make_combined_df(output_dir)

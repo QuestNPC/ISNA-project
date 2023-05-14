@@ -42,7 +42,7 @@ def processor(files, output, tag, i):
         df.to_feather(path)
     except Exception as e:
         print(e)
-def make_likes_df(output_dir, hashtag):
+def make_tag_df(output_dir, hashtag):
     print("Step 1 for: ", hashtag)
     
     details_path = 'combo'
@@ -97,4 +97,4 @@ if  __name__ == '__main__':
     #give list of top hashtags identified
     hashtags = ['#coronavirus','#covid19','#covid', '#corona', '#lockdown', '#bts', '#pfizer', '#vaccine']
     for hashtag in hashtags:
-        make_likes_df(output_dir, hashtag)
+        make_tag_df(output_dir, hashtag)

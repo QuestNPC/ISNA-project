@@ -5,7 +5,7 @@ import pandas as pd
 
 wd = os.getcwd()
 
-def stuff(tag, periods, path):
+def calc_diff(tag, periods, path):
     path = os.path.join(wd, path)
     file = tag + '.fea'
     path = path + '\\'+ file
@@ -36,7 +36,7 @@ if  __name__ == '__main__':
     output = ''
     df = pd.DataFrame()
     for i, hashtag in enumerate(hashtags):
-        values = stuff(hashtag, periods[i], 'weekly')
+        values = calc_diff(hashtag, periods[i], 'weekly')
         df[hashtag] = values
     print('Done')
     print(df)

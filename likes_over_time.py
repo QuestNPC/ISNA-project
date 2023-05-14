@@ -6,7 +6,7 @@ import pandas as pd
 
 wd = os.getcwd()
 
-def stuff(tag, weeks, path):
+def calc_week_like_stats(tag, weeks, path):
     path = os.path.join(wd, path)
     file = tag + '.fea'
     path = path + '\\'+ file
@@ -79,4 +79,4 @@ if  __name__ == '__main__':
     output = ''
     for hashtag in hashtags:
         
-        stuff(hashtag, weeks, 'weekly')
+        calc_week_like_stats(hashtag, weeks, 'weekly')

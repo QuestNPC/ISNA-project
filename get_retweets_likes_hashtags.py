@@ -22,7 +22,7 @@ def processor(files, output):
     path = os.path.join(path, filename)
     df.to_feather(path)
 
-def make_likes_df():
+def make_comparison_df():
     print("Making dataframes")
 
     details_path = 'combo'
@@ -74,7 +74,7 @@ def combiner(files):
 
 if  __name__ == '__main__':
     output = "Counts\\retweets_likes.fea"
-    df = make_likes_df()
+    df = make_comparison_df()
     
     df[['Likes','Retweets']] = df[['Likes','Retweets']].astype('int64')
     df.to_feather(output)

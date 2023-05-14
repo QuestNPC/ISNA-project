@@ -8,7 +8,7 @@ wd = os.getcwd()
 Shit's done (for now)
 '''
 
-def thinner(path):
+def details_changer(path):
     path = os.path.join(wd, path)
     all_files = []
     for root,dirs,files in os.walk(path):
@@ -25,15 +25,15 @@ def thinner(path):
     
     for i in range(0, len(all_files), chunk_size):
         chunk = all_files[i:i+chunk_size]
-        pool.apply_async(remove_excess_df, args=(chunk,))
+        pool.apply_async(details_changer_processer, args=(chunk,))
     
     pool.close()
     pool.join()
     return
 
-def remove_excess_df(files):
-
-    #path shit here
+def details_changer_processer(files):
+    #fuction for details change multiprocessing
+    
     for file in files:
         try:
             df = pd.read_csv(file, encoding='cp65001', low_memory=False) #some files require this encoding to be read
@@ -44,7 +44,7 @@ def remove_excess_df(files):
         file = file.replace(".csv", ".fea")
         df.to_feather(file)
 
-def feartherer(path):
+def sent_changer(path):
 
     path = os.path.join(wd, path)
     all_files = []
@@ -63,12 +63,12 @@ def feartherer(path):
     
     for i in range(0, len(all_files), chunk_size):
         chunk = all_files[i:i+chunk_size]
-        pool.apply_async(changer, args=(chunk,))
+        pool.apply_async(sent_changer_processer, args=(chunk,))
     
     pool.close()
     pool.join()
 
-def changer(files):
+def sent_changer_processer(files):
     #path shit here
     for path in files:
         try:
@@ -79,7 +79,7 @@ def changer(files):
         path = path.replace(".csv", ".fea")
         df.to_feather(path)
 
-def feartherer_ner(path):
+def ner_changer(path):
 
     path = os.path.join(wd, path)
     all_files = []
@@ -97,12 +97,12 @@ def feartherer_ner(path):
     
     for i in range(0, len(all_files), chunk_size):
         chunk = all_files[i:i+chunk_size]
-        pool.apply_async(changer_ner, args=(chunk,))
+        pool.apply_async(ner_changer_processer, args=(chunk,))
     
     pool.close()
     pool.join()
 
-def changer_ner(files):
+def ner_changer_processer(files):
     #path shit here
     for path in files:
         try:
@@ -115,7 +115,7 @@ def changer_ner(files):
         path = path.replace(".csv", ".fea")
         df.to_feather(path)
         
-def fixer(path):
+def hashtag_changer(path):
 
     path = os.path.join(wd, path)
     all_files = []
@@ -134,13 +134,13 @@ def fixer(path):
     pool = mp.Pool(processes=num_processes)
     for i in range(0, len(all_files), chunk_size):
         chunk = all_files[i:i+chunk_size]
-        pool.apply_async(fix, args=(chunk,))
+        pool.apply_async(hashtag_changer_processer, args=(chunk,))
 
     pool.close()
     pool.join()
     return
 
-def fix(files):
+def hashtag_changer_processer(files):
     for path in files:
         try:
             df = pd.read_csv(path, encoding='cp65001', low_memory=False) #some files require this encoding to be read
@@ -160,13 +160,13 @@ def fix(files):
 if __name__== '__main__':
     path = 'COVID19_Tweets_Dataset\Summary_Details'
     print('Details...')
-    #thinner(path)
+    details_changer(path)
     path = 'COVID19_Tweets_Dataset\Summary_Hashtag'
     print('Tags...')
-    fixer(path)
+    hashtag_changer(path)
     path = 'COVID19_Tweets_Dataset\Summary_NER'
     print('NER...')
-    #feartherer_ner(path)
+    ner_changer(path)
     path = 'COVID19_Tweets_Dataset\Summary_Sentiment'
     print('Sentiment...')
-    #feartherer(path)
+    sent_changer(path)
